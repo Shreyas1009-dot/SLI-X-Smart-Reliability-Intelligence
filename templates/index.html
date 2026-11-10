@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SLI-X — Smart Reliability Intelligence</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body class="dark-theme">
+    <div class="app-layout">
+        <!-- TOP NAVIGATION BAR -->
+        <header class="navbar">
+            <div class="nav-brand">
+                <div class="logo-badge">
+                    <span class="logo-icon">⚡</span>
+                    <span class="logo-text">SLI<span class="accent-x">-X</span></span>
+                </div>
+                <div class="subtitle">Smart Reliability Intelligence • Latency & Breakdown Diagnostics</div>
+            </div>
+
+            <div class="nav-status-group">
+                <div class="status-chip" id="system-health-chip">
+                    <span class="status-dot healthy" id="health-dot"></span>
+                    <span class="status-label" id="health-text">INITIALIZING</span>
+                </div>
+                <div class="mode-badge" id="current-mode-badge">
+                    MODE: <span id="active-mode-name">NORMAL</span>
+                </div>
+                <div class="clock" id="live-clock">--:--:--</div>
+            </div>
+        </header>
+
+        <!-- CONTROL BAR / DEMO FAULT INJECTION -->
+        <section class="demo-controls-card">
+            <div class="controls-header">
+                <div class="controls-title">
+                    <span class="control-icon">🛠️</span>
+                    <h3>Fault Injection & Demonstration Controls</h3>
+                </div>
+                <div class="controls-desc">
+                    Inject controlled internal delays to simulate real-world production outages where CPU remains normal while latency spikes.
+                </div>
+            </div>
+
+            <div class="controls-actions">
+                <button class="btn btn-mode active" id="btn-mode-normal" onclick="setDemoMode('normal')">
+                    <span class="btn-dot dot-green"></span> Normal Mode
+                </button>
+                <button class="btn btn-mode btn-warning" id="btn-mode-slow-db" onclick="setDemoMode('slow_database')">
+                    <span class="btn-dot dot-amber"></span> Injected Slow Database (+1.5s)
+                </button>
+                <button class="btn btn-mode btn-warning" id="btn-mode-slow-pay" onclick="setDemoMode('slow_payment')">
+                    <span class="btn-dot dot-amber"></span> Injected Slow Payment (+1.5s)
+                </button>
+                <button class="btn btn-secondary" onclick="resetToNormal()">
+                    <span class="icon">↺</span> Reset to Normal
+                </button>
+                <div class="divider-v"></div>
+                <button class="btn btn-action" id="btn-send-single" onclick="sendSingleRequest()">
+                    <span class="icon">▶</span> Send Single Order
+                </button>
+                <button class="btn btn-traffic" id="btn-toggle-traffic" onclick="toggleLiveTraffic()">
+                    <span class="traffic-pulse" id="traffic-indicator"></span>
+                    <span id="traffic-btn-text">Start Live Traffic</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- INTELLIGENT DIAGNOSTIC HERO CARD (THE CORE INNOVATION) -->
+        <section class="diagnosis-hero-card" id="diagnosis-card">
+            <div class="diagnosis-header">
+                <div class="diagnosis-badge-title">
+                    <span class="hero-icon">🧠</span>
+                    <h2>Intelligent Diagnostic Engine</h2>
+                </div>
+                <div class="diagnosis-status-pill" id="diag-status-pill">EVALUATING</div>
+            </div>
+
+            <div class="diagnosis-body">
+                <div class="diagnosis-cause-banner" id="diag-cause-banner">
+                    <div class="banner-title" id="diag-likely-cause">Analyzing telemetry streams...</div>
+                    <div class="banner-sub" id="diag-affected-component">Component: None</div>
+                </div>
+
+                <div class="diagnosis-grid">
+                    <div class="diag-column">
+                        <h4>Diagnostic Explanation</h4>
+                        <p class="diag-explanation-text" id="diag-explanation">
+                            Observing request breakdown and host telemetry...
+                        </p>
+                        <div class="cpu-ruling-box" id="cpu-ruling-box">
+                            <span class="ruling-badge" id="cpu-ruling-badge">CPU ANALYSIS</span>
+                            <span class="ruling-text" id="diag-cpu-assessment">Checking host compute utilization...</span>
+                        </div>
+                    </div>
+
+                    <div class="diag-column">
+                        <h4>Recommended Corrective Action</h4>
+                        <ul class="remedy-list" id="diag-remedy-list">
+                            <li>Awaiting telemetry to form recommendations...</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- METRICS ROW: SUPPORTING INFRASTRUCTURE vs CORE SLIs -->
+        <div class="metrics-grid">
+            <!-- INFRASTRUCTURE CARD (CPU & RAM) -->
+            <div class="metric-panel infra-panel">
+                <div class="panel-header">
+                    <h4>Host Infrastructure</h4>
+                    <span class="tag-subtle">psutil live metrics</span>
+                </div>
+                <div class="infra-stats-grid">
+                    <div class="infra-stat">
+                        <div class="stat-header">
+                            <span class="stat-label">Host CPU Usage</span>
+                            <span class="stat-value" id="infra-cpu-val">--%</span>
+                        </div>
+                        <div class="meter-bar">
+                            <div class="meter-fill" id="infra-cpu-bar" style="width: 0%;"></div>
+                        </div>
+                        <div class="stat-footer-note">Normal threshold &lt; 75%</div>
+                    </div>
+                    <div class="infra-stat">
+                        <div class="stat-header">
+                            <span class="stat-label">Host Memory Usage</span>
+                            <span class="stat-value" id="infra-mem-val">--%</span>
+                        </div>
+                        <div class="meter-bar">
+                            <div class="meter-fill fill-cyan" id="infra-mem-bar" style="width: 0%;"></div>
+                        </div>
+                        <div class="stat-footer-note" id="infra-mem-detail">-- MB / -- MB</div>
+                    </div>
+                </div>
+                <div class="infra-disclaimer">
+                    ⚠️ <strong>Notice:</strong> CPU and memory are supporting infrastructure metrics. They are <em>not</em> SLIs. Low CPU does not guarantee user-perceived reliability!
+                </div>
+            </div>
+
+            <!-- CORE SLI METRICS PANEL -->
+            <div class="metric-panel sli-panel">
+                <div class="panel-header">
+                    <h4>Core Service Level Indicators (SLIs)</h4>
+                    <span class="tag-accent">Rolling 60s Window</span>
+                </div>
+                <div class="slis-cards-grid">
+                    <div class="sli-card" id="card-availability">
+                        <div class="sli-label">Availability</div>
+                        <div class="sli-number" id="sli-availability">--%</div>
+                        <div class="slo-target-tag" id="slo-target-avail">Target: ≥ 99.9%</div>
+                    </div>
+                    <div class="sli-card" id="card-p95">
+                        <div class="sli-label">P95 Latency</div>
+                        <div class="sli-number" id="sli-p95">-- ms</div>
+                        <div class="slo-target-tag" id="slo-target-p95">Target: &lt; 200 ms</div>
+                    </div>
+                    <div class="sli-card" id="card-avg-latency">
+                        <div class="sli-label">Average Latency</div>
+                        <div class="sli-number" id="sli-avg-latency">-- ms</div>
+                        <div class="slo-target-tag">P50: <span id="sli-p50">-- ms</span></div>
+                    </div>
+                    <div class="sli-card" id="card-error-rate">
+                        <div class="sli-label">Error Rate</div>
+                        <div class="sli-number" id="sli-error-rate">--%</div>
+                        <div class="slo-target-tag" id="slo-target-err">Target: &lt; 1.0%</div>
+                    </div>
+                    <div class="sli-card">
+                        <div class="sli-label">Throughput (RPS)</div>
+                        <div class="sli-number" id="sli-rps">--</div>
+                        <div class="slo-target-tag">Samples: <span id="sli-samples">0</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- REQUEST STAGE BREAKDOWN -->
+        <section class="breakdown-panel">
+            <div class="panel-header">
+                <div class="header-with-icon">
+                    <span class="panel-icon">⏱️</span>
+                    <h4>Internal Request Latency Breakdown (Average ms)</h4>
+                </div>
+                <div class="breakdown-total">
+                    Total Duration: <strong id="breakdown-total-time">-- ms</strong>
+                </div>
+            </div>
+
+            <!-- Stacked visual progress bar -->
+            <div class="stacked-bar-container">
+                <div class="stacked-bar-segment seg-api" id="bar-seg-api" style="width: 0%;" title="API Processing"></div>
+                <div class="stacked-bar-segment seg-db" id="bar-seg-db" style="width: 0%;" title="Database Operation"></div>
+                <div class="stacked-bar-segment seg-payment" id="bar-seg-payment" style="width: 0%;" title="Payment Operation"></div>
+            </div>
+
+            <div class="breakdown-legend-grid">
+                <div class="legend-card">
+                    <div class="legend-color-dot dot-api"></div>
+                    <div class="legend-details">
+                        <span class="stage-name">1. API Processing</span>
+                        <div class="stage-timing"><span id="time-api">0.0</span> ms (<span id="pct-api">0%</span>)</div>
+                        <span class="stage-desc">Routing, Auth, Serialization</span>
+                    </div>
+                </div>
+                <div class="legend-card highlightable" id="legend-db-card">
+                    <div class="legend-color-dot dot-db"></div>
+                    <div class="legend-details">
+                        <span class="stage-name">2. Database Operation</span>
+                        <div class="stage-timing"><span id="time-db">0.0</span> ms (<span id="pct-db">0%</span>)</div>
+                        <span class="stage-desc">SQLite Queries, Inventory, Orders</span>
+                    </div>
+                </div>
+                <div class="legend-card highlightable" id="legend-payment-card">
+                    <div class="legend-color-dot dot-payment"></div>
+                    <div class="legend-details">
+                        <span class="stage-name">3. Payment Operation</span>
+                        <div class="stage-timing"><span id="time-payment">0.0</span> ms (<span id="pct-payment">0%</span>)</div>
+                        <span class="stage-desc">Gateway Auth & Webhooks</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- RECENT REQUESTS STREAM -->
+        <section class="requests-panel">
+            <div class="panel-header">
+                <div class="header-with-icon">
+                    <span class="panel-icon">📋</span>
+                    <h4>Recent Requests Stream (Real-Time Telemetry)</h4>
+                </div>
+                <span class="tag-subtle">Auto-refreshing every 1.5s</span>
+            </div>
+
+            <div class="table-container">
+                <table class="requests-table">
+                    <thead>
+                        <tr>
+                            <th>Request ID</th>
+                            <th>Time</th>
+                            <th>Total Latency</th>
+                            <th>API ms</th>
+                            <th>DB ms</th>
+                            <th>Payment ms</th>
+                            <th>Status</th>
+                            <th>Mode / Diagnosis Flag</th>
+                        </tr>
+                    </thead>
+                    <tbody id="requests-table-body">
+                        <tr>
+                            <td colspan="8" class="text-center">Loading request history...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer class="footer">
+            <div class="footer-left">
+                <strong>SLI-X</strong> — Smart Reliability Intelligence Architecture • Prometheus format available at <code>/metrics</code>
+            </div>
+            <div class="footer-right">
+                Empirical Instrumentation Demo • Ready for College Review
+            </div>
+        </footer>
+    </div>
+
+    <script src="/static/dashboard.js"></script>
+</body>
+</html>
+
